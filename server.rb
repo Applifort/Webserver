@@ -4,13 +4,14 @@
 require 'socket'
 require './lib/response'
 require './lib/request'
-MAX_EOL = 2
+MAX_EOL = 5
 
 socket = TCPServer.new(ENV['HOST'], ENV['PORT'])
 
 CONTENT_TYPES = { 'txt' => 'text/plain', 'json' => 'application/json', 'html' => 'text/html' }
 
 def handle_request(request_text, client)
+  puts
   request  = Request.new(request_text)
   path = request.path
 
@@ -44,16 +45,22 @@ end
 def handle_connection(client)
   puts "Getting new client #{client}"
   request_text = ''
-  eol_count = 0
+  last_4_bytes = '****'
 
   loop do
     buf = client.recv(1)
-    puts "#{client} #{buf}"
     request_text += buf
 
-    eol_count += 1 if buf == "\n"
+    last_4_bytes = update_last_4_bytes(buf, last_4_bytes)
 
-    if eol_count == MAX_EOL
+    if last_4_bytes == "\r\n\r\n"
+
+      request_text.each_line do |line|
+        next unless line.downcase.match?('content-length')
+        length = line.scan(/\d/).join('').to_i
+        request_text += client.recv(length)
+      end
+
       handle_request(request_text, client)
       break
     end
@@ -65,6 +72,11 @@ rescue => e
   response.send(client)
 
   client.close
+end
+
+def update_last_4_bytes(byte, bytes)
+  bytes_without_first = bytes.slice(1..-1)
+  "#{bytes_without_first}#{byte}"
 end
 
 puts "Listening on #{ENV['HOST']}:#{ENV['PORT']}. Press CTRL+C to cancel."
