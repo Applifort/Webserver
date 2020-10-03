@@ -35,7 +35,6 @@ module Rack
           require 'webrick/https'
         end
 
-
         @socket = TCPServer.new(ENV['HOST'], ENV['PORT'])
         loop do
           Thread.start(socket.accept) do |client|
@@ -164,5 +163,7 @@ module Rack
         end
       end
     end
+
+    register :ebrik, Ebrik
   end
 end

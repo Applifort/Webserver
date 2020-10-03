@@ -23,7 +23,6 @@ class Request
         add_body(line)
       end
     end
-    puts "HEADER"
     puts @headers
   end
 
