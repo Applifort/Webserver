@@ -12,6 +12,7 @@ class Request
     @body = {}
 
     mode = :headers
+
     request.lines[1..-1].each do |line|
       return mode = :body if line == "\r\n"
 
