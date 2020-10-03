@@ -1,28 +1,28 @@
 # frozen_string_literal: true
 
-require 'ebrik'
 require 'stringio'
+require 'rack/handler'
 
 # This monkey patch allows for applications to perform their own chunking
 # through WEBrick::HTTPResponse if rack is set to true.
-class WEBrick::HTTPResponse
-  attr_accessor :rack
+# class WEBrick::HTTPResponse
+#   attr_accessor :rack
 
-  alias _rack_setup_header setup_header
-  def setup_header
-    app_chunking = rack && @header['transfer-encoding'] == 'chunked'
+#   alias _rack_setup_header setup_header
+#   def setup_header
+#     app_chunking = rack && @header['transfer-encoding'] == 'chunked'
 
-    @chunked = app_chunking if app_chunking
+#     @chunked = app_chunking if app_chunking
 
-    _rack_setup_header
+#     _rack_setup_header
 
-    @chunked = false if app_chunking
-  end
-end
+#     @chunked = false if app_chunking
+#   end
+# end
 
 module Rack
   module Handler
-    class Ebrik < ::WEBrick::HTTPServlet::AbstractServlet
+    class Ebrik
       def self.run(app, **options)
         environment  = ENV['RACK_ENV'] || 'development'
         default_host = environment == 'development' ? 'localhost' : nil
@@ -37,7 +37,7 @@ module Rack
 
         @socket = TCPServer.new(ENV['HOST'], ENV['PORT'])
         loop do
-          Thread.start(socket.accept) do |client|
+          Thread.start(@socket.accept) do |client|
             handle_connection(client)
           end
         end
@@ -48,7 +48,7 @@ module Rack
         # @server.start
       end
 
-      def handle_connection(client)
+      def self.handle_connection(client)
         puts "Getting new client #{client}"
         request_text = ''
         last_4_bytes = '****'
@@ -67,7 +67,7 @@ module Rack
               request_text += client.recv(length)
             end
 
-            handle_request(request_text, client)
+            self.handle_request(request_text, client)
             break
           end
         end
@@ -78,6 +78,14 @@ module Rack
         response.send(client)
 
         client.close
+      end
+
+      def self.update_last_4_bytes(byte, bytes)
+        bytes_without_first = bytes.slice(1..-1)
+        "#{bytes_without_first}#{byte}"
+      end
+
+      def self.handle_request(request_text, client)
       end
 
       def self.valid_options
@@ -164,6 +172,6 @@ module Rack
       end
     end
 
-    register :ebrik, Ebrik
+    register :ebrik, Rack::Handler::Ebrik
   end
 end
