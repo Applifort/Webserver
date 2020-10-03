@@ -8,6 +8,8 @@ MAX_EOL = 2
 
 socket = TCPServer.new(ENV['HOST'], ENV['PORT'])
 
+CONTENT_TYPES = { txt: 'text/plain', json: 'application/json', html: 'text/htm' }
+
 def handle_request(request_text, client)
   request  = Request.new(request_text)
   path = request.path
@@ -18,8 +20,13 @@ def handle_request(request_text, client)
 
   if File.exists?(file_path)
     if file_readable?(file_path)
-      content = File.read("files#{path}")
-      response = Response.new(code: 200, data: content)
+      content = File.read(file_path)
+      extension = File.extname(file_path).slice(1).to_sym
+      puts 'EXTENSION'
+      puts extension
+      content_type = CONTENT_TYPES[extension]
+
+      response = Response.new(code: 200, data: content, headers: ["Content-type/#{content_type}"])
     else
       response = Response.new(code: 403)
     end
