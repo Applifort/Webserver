@@ -23,6 +23,8 @@ class Request
         add_body(line)
       end
     end
+
+    puts @headers
   end
 
   def add_body(line)

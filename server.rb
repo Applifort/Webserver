@@ -11,12 +11,18 @@ socket = TCPServer.new(ENV['HOST'], ENV['PORT'])
 def handle_request(request_text, client)
   request  = Request.new(request_text)
   path = request.path
-  
+
   puts "#{client.peeraddr[3]} #{path}"
 
-  if File.exists?("files#{path}") 
-    content = File.read("files#{path}")
-    response = Response.new(code: 200, data: content)
+  file_path = "files#{path}"
+
+  if File.exists?(file_path)
+    if file_readable?(file_path)
+      content = File.read("files#{path}")
+      response = Response.new(code: 200, data: content)
+    else
+      response = Response.new(code: 403)
+    end
   else
     response = Response.new(code: 404)
   end
@@ -24,6 +30,10 @@ def handle_request(request_text, client)
   response.send(client)
 
   client.shutdown
+end
+
+def file_readable?(file_path)
+  File.stat(file_path).mode.to_s(8)[5..5].to_i > 3
 end
 
 def handle_connection(client)
