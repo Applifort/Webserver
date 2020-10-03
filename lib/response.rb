@@ -11,7 +11,7 @@ class Response
     "HTTP/1.1 #{@code}\r\n" +
     "Content-Length: #{@data.bytesize}\r\n" +
     @headers.join("\r\n") +
-    "\r\n"
+    "\r\n\r\n"
   end
 
   def body
